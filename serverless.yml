@@ -1,0 +1,78 @@
+service: lambda-demo
+# app and org for use with dashboard.serverless.com
+#app: your-app-name
+#org: your-org-name
+frameworkVersion: "3"
+
+# Add the serverless-webpack plugin
+plugins:
+  - serverless-webpack
+  - serverless-iam-roles-per-function
+
+
+provider:
+  name: aws
+  runtime: nodejs16.x
+  region: ap-south-1
+
+functions:
+  taskPost:
+    handler: src/taskHandler.post
+    events:
+      - httpApi:
+          method: post
+          path: /tasks
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+        Resource: 'arn:aws:dynamodb:*:*:table/tasks'
+  taskList:
+    handler: src/taskHandler.list
+    events:
+      - httpApi:
+          method: get
+          path: /tasks
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:Scan
+        Resource: 'arn:aws:dynamodb:*:*:table/tasks'
+  taskPut:
+    handler: src/taskHandler.put
+    events:
+      - httpApi:
+          method: put
+          path: /tasks/{taskId}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:updateItem
+        Resource: 'arn:aws:dynamodb:*:*:table/tasks'
+  taskDelete:
+    handler: src/taskHandler.remove
+    events:
+      - httpApi:
+          method: delete
+          path: /tasks/{taskId}
+    iamRoleStatements:
+      - Effect: Allow
+        Action:
+          - dynamodb:DeleteItem
+        Resource: 'arn:aws:dynamodb:*:*:table/tasks'
+        
+resources:
+  Resources:
+    TasksDynamoDBTable:
+      Type: AWS::DynamoDB::Table
+      Properties:
+        TableName: tasks
+        AttributeDefinitions:
+          - AttributeName: id
+            AttributeType: S
+        KeySchema:
+          - AttributeName: id
+            KeyType: HASH
+        ProvisionedThroughput:
+          ReadCapacityUnits: 5
+          WriteCapacityUnits: 5
